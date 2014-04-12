@@ -1,17 +1,19 @@
 # Fact expected:
-# $::rekey_agent_ca_cert
+# $::rekey_agent_ca_cert_fingerprint
 class rekey (
-  $ca_cert,
-  $rekey_ssldir = undef,
-  $clientcert   = $::clientcert,
+  $ca_sha1_fingerprint,
+  $clientcert = $::clientcert,
 ) {
 
-  # Choose an alternate ssldir to use for generating new keys, if not supplied
-  $rekey_ca_cert_sha1 = sha1($ca_cert)
-  $ssldir = $rekey_ssldir ? {
-    undef   => "${::puppet_vardir}/rekey_${rekey_ca_cert_sha1}",
-    default => $rekey_ssldir,
+  # Sanitize the sha1 fingerprint parameter and verify that it looks like a
+  # valid sha1
+  $sanitized_ca_fingerprint = delete($ca_sha1_fingerprint, ':')
+  if size($sanitized_ca_fingerprint) != 40 {
+    fail("Class[rekey]/ca_sha1_fingerprint: Expected sha1 hash string")
   }
+
+  # The ssldir variable specifies the temporary ssldir to create new keys in
+  $ssldir = "${::puppet_vardir}/rekey_${ca_sha1_fingerprint}"
 
   $directories = [
     $ssldir,
@@ -20,45 +22,20 @@ class rekey (
     "${ssldir}/certificate_requests",
   ]
 
-  file { $directories:
-    ensure => directory,
-    owner  => $::id,
-    mode   => '0700',
-  }
-
-  if $ca_cert != $::puppet_agent_ca_cert {
-    $keyfile = "${ssldir}/private_keys/${clientcert}.pem"
-    $pubfile = "${ssldir}/public_keys/${clientcert}.pem"
-    $csrfile = "${ssldir}/certificate_requests/${clientcert}.pem"
-
-    Exec {
-      require => File[$directories],
-      path    => $::path,
+  # Dependent on whether the active CA matches the rekey'd CA, either prep new
+  # keys or clean up after the successful rekeying.
+  if $ca_sha1_fingerprint != $::rekey_agent_ca_sha1_fingerprint {
+    class { 'rekey::prep':
+      directories => $directories,
+      keyfile     => "${ssldir}/private_keys/${clientcert}.pem",
+      pubfile     => "${ssldir}/public_keys/${clientcert}.pem",
+      csrfile     => "${ssldir}/certificate_requests/${clientcert}.pem",
+      clientcert  => $clientcert,
     }
-
-    # TODO: Replace with ruby types for cross-platform compatibility
-    exec { 'rekey_generate_new_private_key':
-      command => "openssl genrsa -out ${keyfile} 4096",
-      creates => $keyfile,
-    } ->
-    exec { 'rekey_generate_new_public_key':
-      command => "openssl rsa -in ${keyfile} -pubout -out ${pubfile}",
-      creates => $pubfile,
-    } ->
-    exec { 'rekey_generate_new_csr':
-      command => "openssl req -new -key ${keyfile} -out ${csrfile} -subj /CN=${clientcert}",
-      creates => $csrfile,
-    } ->
-
-    # This file is picked up by the $::rekey_csr fact
-    file { "${::puppet_vardir}/rekey.csr":
-      ensure  => file,
-      content => $csrfile,
-      owner   => $::id,
-      mode    => '0644',
+  } else {
+    class { 'rekey::tidy':
+      directories => $ssldir,
     }
   }
-
-  ## TODO: provide for cleaning up the rekey ssldir when appropriate
 
 }

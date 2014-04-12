@@ -6,9 +6,11 @@ class rekey (
 ) {
 
   # Sanitize the sha1 fingerprint parameter and verify that it looks like a
-  # valid sha1
+  # valid sha1. Note that in order to use the size() function we have to make
+  # the string be not a valid number. The size() function rejects any string
+  # that can be cast to a Float.
   $sanitized_ca_fingerprint = delete($ca_sha1_fingerprint, ':')
-  if size($sanitized_ca_fingerprint) != 40 {
+  if size("x${sanitized_ca_fingerprint}") != 41 {
     fail("Class[rekey]/ca_sha1_fingerprint: Expected sha1 hash string")
   }
 

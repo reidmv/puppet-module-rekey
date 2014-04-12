@@ -32,14 +32,25 @@ class rekey::prep (
   exec { 'rekey_generate_new_csr':
     command => "openssl req -new -key ${keyfile} -out ${csrfile} -subj /CN=${clientcert}",
     creates => $csrfile,
-  } ->
+    before  => File["${::puppet_vardir}/rekey.csr"],
+  }
 
-  # This file is picked up by the $::rekey_csr fact
-  file { "${::puppet_vardir}/rekey.csr":
-    ensure => file,
-    source => $csrfile,
-    owner  => $::id,
-    mode   => '0644',
+  # This file is picked up by the $::rekey_csr fact. If using a puppet version
+  # that supports symlinks on all platforms, create a symlink. This allows noop
+  # runs to complete without error. Otherwise copy the file from it's
+  # CA-specific directory into the fact location (works on Windows in PE <3.2).
+  if ($::puppetversion =~ /^3.[4-9]|^3.\d\d|[4-9]|\d\d/) {
+    file { "${::puppet_vardir}/rekey.csr":
+      ensure  => symlink,
+      target  => $csrfile,
+    }
+  } else {
+    file { "${::puppet_vardir}/rekey.csr":
+      ensure => file,
+      source => $csrfile,
+      owner  => $::id,
+      mode   => '0644',
+    }
   }
 
 }

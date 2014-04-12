@@ -5,6 +5,7 @@ class rekey::prep (
   $pubfile,
   $csrfile,
   $clientcert,
+  $install,
 ) {
   if $caller_module_name != $module_name {
     fail("Use of private class ${name} by ${caller_module_name}")
@@ -20,7 +21,11 @@ class rekey::prep (
     mode   => '0700',
   } ->
 
-  # TODO: Replace with ruby types for cross-platform compatibility
+  # TODO: Replace with ruby types for cross-platform and Puppet compatibility.
+  #       The stand-in exec resources below demonstrate what needs to happen
+  #       but these exec-generated keys are not drop-in compatible with
+  #       Puppet. I don't know what flags to give to the openssl cli to build
+  #       the correct kind of file(s).
   exec { 'rekey_generate_new_private_key':
     command => "openssl genrsa -out ${keyfile} 4096",
     creates => $keyfile,
@@ -49,7 +54,22 @@ class rekey::prep (
       ensure => file,
       source => $csrfile,
       owner  => $::id,
-      mode   => '0644',
+      mode   => '0600',
+    }
+  }
+
+  if "x${install}" == 'xtrue' {
+    # Use a class for this component in order to leverage the "deploy" stage
+    # to push this to the very end of the run. This is desireable becase as
+    # soon as the new certificates are installed, any calls to the old master
+    # will fail, including in-run calls such as file metadata requests.
+    include stdlib::stages
+    class { 'rekey::install':
+      keyfile    => $keyfile,
+      pubfile    => $pubfile,
+      csrfile    => $csrfile,
+      clientcert => $clientcert,
+      stage      => 'deploy',
     }
   }
 

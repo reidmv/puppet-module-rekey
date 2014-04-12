@@ -2,7 +2,8 @@
 # $::rekey_agent_ca_cert_fingerprint
 class rekey (
   $ca_sha1_fingerprint,
-  $clientcert = $::clientcert,
+  $install_new_keys = false,
+  $clientcert       = $::clientcert,
 ) {
 
   # Sanitize the sha1 fingerprint parameter and verify that it looks like a
@@ -33,6 +34,7 @@ class rekey (
       pubfile     => "${ssldir}/public_keys/${clientcert}.pem",
       csrfile     => "${ssldir}/certificate_requests/${clientcert}.pem",
       clientcert  => $clientcert,
+      install     => $install_new_keys,
     }
   } else {
     class { 'rekey::tidy':

@@ -26,6 +26,7 @@ class rekey::ca::install {
     recurse => true,
     purge   => true,
     force   => true,
+    backup  => false,
     require => Exec['rekey_preserve_installed_ssldir'],
   }
 

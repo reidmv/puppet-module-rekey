@@ -24,7 +24,6 @@ class rekey::ca::prep {
     owner   => $::id,
     mode    => '0644',
     source  => "${ssldir}/ca/ca_crt.pem",
-    replace => true,
   }
 
   if $rekey::ca::install {

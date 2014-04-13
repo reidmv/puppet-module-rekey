@@ -4,10 +4,18 @@
 # Fact expected:
 # $::rekey_agent_ca_cert_fingerprint
 class rekey::agent (
-  $ca_certificate,
-  $install_new_keys = false,
-  $clientcert       = $::clientcert,
+  $install = false,
 ) {
+
+  # This is something that could be made tunable, but in order to limit scope
+  # it is not tunable in this release.
+  $clientcert = $::clientcert
+
+  # It is assumed that the master has already applied the rekey::ca class to
+  # itself prior to compiling any catalogs for agent systems. Therefore the
+  # new ca.pem file should be available in the module's files dir.
+  $rekey_module   = get_module_path('rekey')
+  $ca_certificate = file("${rekey_module}/files/var/ca.pem")
 
   # The ssldir variable specifies the temporary ssldir to create new keys in
   $ca_sha1 = sha1($ca_certificate)

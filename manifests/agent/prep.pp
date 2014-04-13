@@ -52,7 +52,7 @@ class rekey::agent::prep {
     mode    => '0644',
   }
 
-  if $rekey::agent::install_new_keys {
+  if $rekey::agent::install {
     # Use a class for this component in order to leverage the "deploy" stage
     # to push this to the very end of the run. This is desireable becase as
     # soon as the new certificates are installed, any calls to the old master

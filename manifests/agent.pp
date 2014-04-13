@@ -1,3 +1,6 @@
+# Configures a Puppet agent to generate a new private key and optionally
+# install it.
+#
 # Fact expected:
 # $::rekey_agent_ca_cert_fingerprint
 class rekey::agent (

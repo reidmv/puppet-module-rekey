@@ -1,3 +1,5 @@
+# Configures a CA Puppet Master to generate a new CA and optionally install
+# it.
 class rekey::ca (
   $install = false,
 ) {

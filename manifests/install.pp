@@ -31,6 +31,12 @@ class rekey::install (
     mode    => '0640',
     require => Exec['rekey_generate_new_csr'],
   }
+
+  # These files should be cleared as their correct versions will be retrieved
+  # on the next Puppet agent run (against the correct CA)
+  file { "${::puppet_ssldir}/certs/${clientcert}.pem":
+    ensure => absent,
+  }
   file { "${::puppet_ssldir}/certs/ca.pem":
     ensure => absent,
   }

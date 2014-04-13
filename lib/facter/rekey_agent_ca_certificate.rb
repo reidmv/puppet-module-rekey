@@ -1,12 +1,10 @@
-# Fact: rekey_agent_ca_sha1_fingerprint
+# Fact: rekey_agent_ca_certificate
 #
 # Purpose: Return the ca certificate currently used by the agent
 #
 # Resolution: Returns the sha1 fingerprint of the cert specified by the
 #   localcacert setting in Puppet.
 #
-require 'openssl'
-require 'digest/sha1'
 
 begin
   require 'facter/util/puppet_settings'
@@ -18,14 +16,13 @@ rescue LoadError => e
   load rb_file if File.exists?(rb_file) or raise e
 end
 
-Facter.add("rekey_agent_ca_sha1_fingerprint") do
+Facter.add("rekey_agent_ca_certificate") do
   setcode do
     localcacert = Facter::Util::PuppetSettings.with_puppet do
       Puppet[:localcacert]
     end
     if File.exist?(localcacert)
-      cert = OpenSSL::X509::Certificate.new(File.read(localcacert))
-      fingerprint = Digest::SHA1.hexdigest(cert.to_der)
+      File.read(localcacert)
     end
   end
 end

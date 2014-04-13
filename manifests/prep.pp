@@ -1,21 +1,18 @@
 # Private class
-class rekey::prep (
-  $directories,
-  $keyfile,
-  $pubfile,
-  $csrfile,
-  $clientcert,
-  $install,
-) {
+class rekey::prep {
   if $caller_module_name != $module_name {
     fail("Use of private class ${name} by ${caller_module_name}")
   }
+
+  $keyfile = "${rekey::ssldir}/private_keys/${rekey::clientcert}.pem"
+  $pubfile = "${rekey::ssldir}/public_keys/${rekey::clientcert}.pem"
+  $csrfile = "${rekey::ssldir}/certificate_requests/${rekey::clientcert}.pem"
 
   Exec {
     path => $::path,
   }
 
-  file { $directories:
+  file { $rekey::directories:
     ensure => directory,
     owner  => $::id,
     mode   => '0700',
@@ -40,25 +37,15 @@ class rekey::prep (
     before  => File["${::puppet_vardir}/rekey.csr"],
   }
 
-  # This file is picked up by the $::rekey_csr fact. If using a puppet version
-  # that supports symlinks on all platforms, create a symlink. This allows noop
-  # runs to complete without error. Otherwise copy the file from it's
-  # CA-specific directory into the fact location (works on Windows in PE <3.2).
-  if ($::puppetversion =~ /^3.[4-9]|^3.\d\d|[4-9]|\d\d/) {
-    file { "${::puppet_vardir}/rekey.csr":
-      ensure  => symlink,
-      target  => $csrfile,
-    }
-  } else {
-    file { "${::puppet_vardir}/rekey.csr":
-      ensure => file,
-      source => $csrfile,
-      owner  => $::id,
-      mode   => '0600',
-    }
+  # This file is picked up by the $::rekey_csr fact.
+  file { "${::puppet_vardir}/rekey.csr":
+    ensure => file,
+    source => $csrfile,
+    owner  => $::id,
+    mode   => '0600',
   }
 
-  if "x${install}" == 'xtrue' {
+  if $rekey::install_new_keys {
     # Use a class for this component in order to leverage the "deploy" stage
     # to push this to the very end of the run. This is desireable becase as
     # soon as the new certificates are installed, any calls to the old master

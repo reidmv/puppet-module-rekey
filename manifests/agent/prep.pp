@@ -1,28 +1,27 @@
 # Private class
-class rekey::prep {
+class rekey::agent::prep {
   if $caller_module_name != $module_name {
     fail("Use of private class ${name} by ${caller_module_name}")
   }
 
-  $keyfile = "${rekey::ssldir}/private_keys/${rekey::clientcert}.pem"
-  $pubfile = "${rekey::ssldir}/public_keys/${rekey::clientcert}.pem"
-  $csrfile = "${rekey::ssldir}/certificate_requests/${rekey::clientcert}.pem"
+  $ssldir     = $rekey::agent::ssldir
+  $clientcert = $rekey::agent::clientcert
+
+  $keyfile = "${ssldir}/private_keys/${clientcert}.pem"
+  $pubfile = "${ssldir}/public_keys/${clientcert}.pem"
+  $csrfile = "${ssldir}/certificate_requests/${clientcert}.pem"
 
   Exec {
     path => $::path,
   }
 
-  file { $rekey::directories:
+  file { $rekey::agent::directories:
     ensure => directory,
     owner  => $::id,
     mode   => '0700',
   } ->
 
   # TODO: Replace with ruby types for cross-platform and Puppet compatibility.
-  #       The stand-in exec resources below demonstrate what needs to happen
-  #       but these exec-generated keys are not drop-in compatible with
-  #       Puppet. I don't know what flags to give to the openssl cli to build
-  #       the correct kind of file(s).
   exec { 'rekey_generate_new_private_key':
     command => "openssl genrsa -out ${keyfile} 4096",
     creates => $keyfile,
@@ -37,7 +36,7 @@ class rekey::prep {
     before  => File["${::puppet_vardir}/rekey.csr"],
   }
 
-  # This file is picked up by the $::rekey_csr fact.
+  # This is a constat path to the file is picked up by the $::rekey_csr fact.
   file { "${::puppet_vardir}/rekey.csr":
     ensure => file,
     source => $csrfile,
@@ -45,18 +44,22 @@ class rekey::prep {
     mode   => '0600',
   }
 
-  if $rekey::install_new_keys {
+  # This is a constant path to the new ca cert
+  file { "${::puppet_vardir}/rekey_ca_crt.pem":
+    ensure  => file,
+    content => $rekey::agent::ca_certificate,
+    owner   => $::id,
+    mode    => '0644',
+  }
+
+  if $rekey::agent::install_new_keys {
     # Use a class for this component in order to leverage the "deploy" stage
     # to push this to the very end of the run. This is desireable becase as
     # soon as the new certificates are installed, any calls to the old master
     # will fail, including in-run calls such as file metadata requests.
     include stdlib::stages
-    class { 'rekey::install':
-      keyfile    => $keyfile,
-      pubfile    => $pubfile,
-      csrfile    => $csrfile,
-      clientcert => $clientcert,
-      stage      => 'deploy',
+    class { 'rekey::agent::install':
+      stage => 'deploy',
     }
   }
 

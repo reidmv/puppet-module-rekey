@@ -1,6 +1,6 @@
 # Fact expected:
 # $::rekey_agent_ca_cert_fingerprint
-class rekey (
+class rekey::agent (
   $ca_certificate,
   $install_new_keys = false,
   $clientcert       = $::clientcert,
@@ -20,9 +20,9 @@ class rekey (
   # Dependent on whether the active CA matches the rekey'd CA, either prep new
   # keys or clean up after the successful rekeying.
   if $ca_certificate != $::rekey_agent_ca_certificate {
-    include rekey::prep
+    include rekey::agent::prep
   } else {
-    include rekey::tidy
+    include rekey::agent::tidy
   }
 
 }

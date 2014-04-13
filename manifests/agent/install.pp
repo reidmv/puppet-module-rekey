@@ -9,18 +9,21 @@ class rekey::agent::install {
   $csrfile    = $rekey::agent::prep::csrfile
   $clientcert = $rekey::agent::prep::clientcert
 
+  # Note on the subscribe default: this could as easily be a require but
+  # using subscribe here for brevity and since most of the files here have
+  # dependencies that override the resource-default require.
   File {
-    ensure  => file,
-    owner   => $::id,
-    require => File["${::puppet_ssldir}/certs/${clientcert}.pem"],
-    backup  => false,
+    ensure    => file,
+    owner     => $::id,
+    backup    => false,
+    subscribe => File["${::puppet_ssldir}/certs/${clientcert}.pem"],
   }
 
-  # Ensure that a rekeyed certificate exists and is installed
+  # Ensure that a rekeyed certificate exists and is installed.
   file { "${::puppet_ssldir}/certs/${clientcert}.pem":
-    source  => "puppet:///modules/rekey/var/${clientcert}.pem",
-    mode    => '0644',
-    require => undef,
+    source    => "puppet:///modules/rekey/var/${clientcert}.pem",
+    mode      => '0644',
+    subscribe => undef,
   }
 
   # Ensure that the newly generated keys are installed for use by the Puppet

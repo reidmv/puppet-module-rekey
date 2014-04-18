@@ -2,6 +2,7 @@
 # it.
 class rekey::ca (
   $install = false,
+  $purge   = false,
 ) {
 
   $ssldir       = "${::puppet_vardir}/rekey_ca"
@@ -13,6 +14,9 @@ class rekey::ca (
     "${ssldir}/ca/ca_crt.pem",
     '/dev/null'
   )
+
+  $ca_hash    = sha1($rekey_ca)
+  $backup_dir = "${settings::confdir}/ssl_backups/${ca_hash}_predecessor"
 
   $rekey_ca_is_installed = ($installed_ca == $rekey_ca)
 

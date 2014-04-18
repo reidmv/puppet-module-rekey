@@ -4,14 +4,7 @@ class rekey::ca::install {
     fail("Use of private class ${name} by ${caller_module_name}")
   }
 
-  $old_ca_hash = sha1($rekey::ca::installed_ca)
-  $backup_file = "${settings::confdir}/ssl_backups/ssl.${old_ca_hash}.tar.gz"
-
-  file { "${settings::confdir}/ssl_backups":
-    ensure => directory,
-    owner  => $::id,
-    mode   => '0700',
-  }
+  $backup_file = "${rekey::ca::backup_dir}/final_snapshot.tar.gz"
 
   exec { 'rekey_preserve_installed_ssldir':
     command => "tar -czf ${backup_file} ${settings::ssldir}",

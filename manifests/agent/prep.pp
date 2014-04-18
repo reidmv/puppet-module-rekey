@@ -52,6 +52,14 @@ class rekey::agent::prep {
     mode    => '0644',
   }
 
+  # Export a resource ensuring that a certificate is signed based on the CSR
+  if $::rekey_csr {
+    @@rekey::ca::certificate { "rekey_certificate_for_${clientcert}":
+      csr_content => $::rekey_csr,
+      certname    => $clientcert,
+    }
+  }
+
   if $rekey::agent::install {
     # Use a class for this component in order to leverage the "deploy" stage
     # to push this to the very end of the run. This is desireable becase as

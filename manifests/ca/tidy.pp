@@ -8,4 +8,10 @@ class rekey::ca::tidy {
     ensure => absent,
     force  => true,
   }
+
+  file { 'rekey_moduledir_signed_copy':
+    path    => "${rekey::rekey_module}/files/var/signed",
+    ensure  => absent,
+    force   => true,
+  }
 }

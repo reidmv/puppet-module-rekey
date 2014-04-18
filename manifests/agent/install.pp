@@ -21,7 +21,7 @@ class rekey::agent::install {
 
   # Ensure that a rekeyed certificate exists and is installed.
   file { "${::puppet_ssldir}/certs/${clientcert}.pem":
-    source    => "puppet:///modules/rekey/var/${clientcert}.pem",
+    source    => "puppet:///modules/rekey/var/signed/${clientcert}.pem",
     mode      => '0644',
     subscribe => undef,
   }

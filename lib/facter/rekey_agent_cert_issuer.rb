@@ -1,10 +1,5 @@
-# Fact: rekey_agent_ca_certificate
-#
-# Purpose: Return the ca certificate currently used by the agent
-#
-# Resolution: Returns the sha1 fingerprint of the cert specified by the
-#   localcacert setting in Puppet.
-#
+# This facter fact returns the CN of the CA which signed the puppet
+# agent's certificate.
 
 begin
   require 'facter/util/puppet_settings'
@@ -16,13 +11,15 @@ rescue LoadError => e
   load rb_file if File.exists?(rb_file) or raise e
 end
 
-Facter.add("rekey_agent_ca_certificate") do
+Facter.add(:rekey_agent_cert_issuer) do
   setcode do
-    localcacert = Facter::Util::PuppetSettings.with_puppet do
-      Puppet[:localcacert]
-    end
-    if File.exist?(localcacert)
-      File.read(localcacert)
+    begin
+      # This will be nil if Puppet is not available.
+      hostcert = Facter::Util::PuppetSettings.with_puppet { Puppet[:hostcert] }
+      certificate = OpenSSL::X509::Certificate.new(File.read(hostcert))
+      issuer = certificate.issuer.to_s.match(%r{CN=([^/]*)})[1].to_s
+    rescue
+      nil
     end
   end
 end

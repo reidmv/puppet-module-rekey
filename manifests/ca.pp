@@ -1,29 +1,39 @@
 # Configures a CA Puppet Master to generate a new CA and optionally install
 # it.
 class rekey::ca (
+  $new_ca_name,
   $install = false,
   $purge   = false,
 ) {
+  # This should probably be gleaned from a fact.
+  $confdir = $settings::confdir
 
-  $ssldir       = "${::puppet_vardir}/rekey_ca"
-  $rekey_module = get_module_path('rekey')
+  $filesafe_name = regsubst($new_ca_name, '[^0-9A-Za-z.\-]', '_', 'G')
+  $ssldir        = "${::puppet_vardir}/rekey_ca_${filesafe_name}"
+  $backup_dir    = "${confdir}/ssl_backups/${filesafe_name}_predecessor"
 
-  $installed_ca = file("${settings::ssldir}/ca/ca_crt.pem")
-  $rekey_ca     = file(
-    "${rekey_module}/files/var/ca.pem",
-    "${ssldir}/ca/ca_crt.pem",
-    '/dev/null'
-  )
-
-  $ca_hash    = sha1($rekey_ca)
-  $backup_dir = "${settings::confdir}/ssl_backups/${ca_hash}_predecessor"
-
-  $rekey_ca_is_installed = ($installed_ca == $rekey_ca)
+  $rekey_ca_is_installed = ($new_ca_name == $::rekey_active_cacert_cn)
 
   if $rekey_ca_is_installed {
     include rekey::ca::tidy
   } else {
     include rekey::ca::prep
   }
+
+  # Export what the CA cert bundle should look like
+  if ($::rekey_cacert_old and $::rekey_cacert_new) {
+    $bundle_content = $purge ? {
+      true  => $::rekey_cacert_new,
+      false => "${::rekey_cacert_new}${::rekey_cacert_old}",
+    }
+    @@file { 'rekey_ca_bundle':
+      ensure  => present,
+      path    => "${::puppet_ssldir}/certs/ca.pem",
+      content => $bundle_content,
+    }
+  }
+
+  # Also instantiate it.
+  File <<| title == 'rekey_ca_bundle' |>>
 
 }

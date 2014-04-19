@@ -11,7 +11,7 @@ rescue LoadError => e
   load rb_file if File.exists?(rb_file) or raise e
 end
 
-Facter.add(:rekey_cacert_cn) do
+Facter.add(:rekey_active_cacert_cn) do
   setcode do
     begin
       # This will be nil if Puppet is not available.

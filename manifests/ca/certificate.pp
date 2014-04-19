@@ -1,6 +1,7 @@
 define rekey::ca::certificate (
   $csr_content,
   $certname,
+  $ca_name,
 ) {
   include rekey::ca
   $ssldir = $rekey::ca::ssldir

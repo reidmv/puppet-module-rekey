@@ -4,6 +4,7 @@
 # Fact expected:
 # $::rekey_agent_ca_cert_fingerprint
 class rekey::agent (
+  $new_ca_name,
   $install = false,
 ) {
 
@@ -11,15 +12,12 @@ class rekey::agent (
   # it is not tunable in this release.
   $clientcert = $::clientcert
 
-  # It is assumed that the master has already applied the rekey::ca class to
-  # itself prior to compiling any catalogs for agent systems. Therefore the
-  # new ca.pem file should be available in the module's files dir.
-  $rekey_module  = get_module_path('rekey')
-  $module_cacert = file("${rekey_module}/files/var/ca.pem")
-
   # The ssldir variable specifies the temporary ssldir to create new keys in
   $module_cacert_sha1 = sha1($module_cacert)
-  $ssldir = "${::puppet_vardir}/rekey_${module_cacert_sha1}"
+  $filesafe_name = regsubst($new_ca_name, '[^0-9A-Za-z.\-]', '_', 'G')
+  $ssldir        = "${::puppet_vardir}/rekey_agent_${filesafe_name}"
+
+  $rekey_installed = ($new_ca_name == $::rekey_agent_cert_issuer)
 
   $directories = [
     $ssldir,
@@ -28,12 +26,15 @@ class rekey::agent (
     "${ssldir}/certificate_requests",
   ]
 
-  # Dependent on whether the active CA matches the rekey'd CA, either prep new
-  # keys or clean up after the successful rekeying.
-  if $module_cacert != $::rekey_agent_cacert {
-    include rekey::agent::prep
-  } else {
+  # Dependent on whether the active cert issuer matches the new CA, either prep
+  # new keys or clean up after the successful rekeying.
+  if $rekey_installed {
     include rekey::agent::tidy
+  } else {
+    include rekey::agent::prep
   }
+
+  # Import the CA cert bundle exported by the re-keying CA system
+  File <<| title == 'rekey_ca_bundle' |>>
 
 }

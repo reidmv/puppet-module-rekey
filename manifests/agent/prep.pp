@@ -36,20 +36,12 @@ class rekey::agent::prep {
     before  => File["${::puppet_vardir}/rekey.csr"],
   }
 
-  # This is a constat path to the file is picked up by the $::rekey_csr fact.
+  # This constant path to the file is picked up by the $::rekey_csr fact.
   file { "${::puppet_vardir}/rekey.csr":
     ensure => file,
     source => $csrfile,
     owner  => $::id,
     mode   => '0600',
-  }
-
-  # This is a constant path to the new ca cert
-  file { "${::puppet_vardir}/rekey_ca_crt.pem":
-    ensure  => file,
-    content => $rekey::agent::ca_certificate,
-    owner   => $::id,
-    mode    => '0644',
   }
 
   # Export a resource ensuring that a certificate is signed based on the CSR

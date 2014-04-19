@@ -44,21 +44,4 @@ class rekey::agent::install {
     require => Exec['rekey_generate_new_csr'],
   }
 
-  # Part of rolling over to a new CA is installing the new CA cert. We can't
-  # just blow it away because then we don't have any assurance that the next
-  # run will be against a master certified by the correct ca, and if we don't
-  # install the cert now we can't ensure the agent will be keyed to the new
-  # one.
-  file { "${::puppet_ssldir}/certs/ca.pem":
-    source  => "${::puppet_vardir}/rekey_ca_crt.pem",
-    mode    => '0644',
-    require => File["${::puppet_vardir}/rekey_ca_crt.pem"],
-  }
-
-  # These files should be cleared as their correct versions will be retrieved
-  # on the next Puppet agent run (against the correct CA)
-  file { "${::puppet_ssldir}/crl.pem":
-    ensure => absent,
-  }
-
 }

@@ -6,21 +6,21 @@ class rekey::ca::install {
 
   $backup_file = "${rekey::ca::backup_dir}/final_snapshot.tar.gz"
 
-  exec { 'rekey_preserve_installed_ssldir':
+  exec { 'rekey_final_snapshot_installed_ssldir':
     command => "tar -czf ${backup_file} ${settings::ssldir}",
     creates => $backup_file,
     path    => $::path,
     require => File["${settings::confdir}/ssl_backups"],
   }
 
-  file { $settings::ssldir:
+  file { "${::puppet_ssldir}/ca":
     ensure  => directory,
-    source  => $rekey::ca::ssldir,
+    source  => "${rekey::ca::ssldir}/ca",
     recurse => true,
     purge   => true,
     force   => true,
     backup  => false,
-    require => Exec['rekey_preserve_installed_ssldir'],
+    require => Exec['rekey_final_snapshot_installed_ssldir'],
   }
 
 }

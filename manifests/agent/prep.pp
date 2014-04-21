@@ -49,6 +49,7 @@ class rekey::agent::prep {
     @@rekey::ca::certificate { "rekey_certificate_for_${clientcert}":
       csr_content => $::rekey_csr,
       certname    => $clientcert,
+      ca_name     => $rekey::agent::new_ca_name,
     }
   }
 

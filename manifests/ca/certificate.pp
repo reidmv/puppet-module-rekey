@@ -27,7 +27,6 @@ define rekey::ca::certificate (
     path    => "/opt/puppet/bin:${::path}",
     command => "puppet cert sign --ssldir ${ssldir} ${certname}",
     creates => "${ssldir}/ca/signed/${certname}.pem",
-    before  => File['rekey_moduledir_signed_copy'],
   }
 
 }

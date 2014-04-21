@@ -20,11 +20,20 @@ class rekey::ca (
     include rekey::ca::prep
   }
 
-  # Export what the CA cert bundle should look like
+  # Export what the CA cert bundle should look like. Because this will be
+  # installed on the master system and because the master process cares what
+  # order the CA certs are given in, this resource needs to care too. IMHO it's
+  # totally a bug that the master cares during startup.
   if ($::rekey_cacert_old and $::rekey_cacert_new) {
     $bundle_content = $purge ? {
       true  => $::rekey_cacert_new,
-      false => "${::rekey_cacert_new}${::rekey_cacert_old}",
+      false => $rekey_ca_is_installed ? {
+        true  => "${::rekey_cacert_new}${::rekey_cacert_old}",
+        false => $install ? {
+          true  => "${::rekey_cacert_new}${::rekey_cacert_old}",
+          false => "${::rekey_cacert_old}${::rekey_cacert_new}",
+        }
+      }
     }
     @@file { 'rekey_ca_bundle':
       ensure  => present,
